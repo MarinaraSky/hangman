@@ -188,7 +188,7 @@ readFile(char *secretWord, char *filename)
 	int random = 0;
 	int readWordSize = 0;
 	FILE *wordList;
-	char *readWord;
+	char *readWord = NULL;
 	long unsigned int readWordLength = 0;
 	int validLines = 0;
 	int totalLines = 0;
@@ -236,6 +236,7 @@ readFile(char *secretWord, char *filename)
 			totalLines++;
 		}
 	}while(validateInput(secretWord) == 0);
+	free(readWord);
 	fclose(wordList);
 }
 
@@ -243,7 +244,7 @@ void
 getStats(int *win, int *loss, int *totalGuess)
 {
 	FILE *stats;
-	char *statsLine;
+	char *statsLine = NULL;
 	long unsigned int statsLineLength = 0;
 
 	stats = fopen(".hangman", "r");
@@ -263,6 +264,7 @@ getStats(int *win, int *loss, int *totalGuess)
 			*loss = 0;
 			*totalGuess = 0;
 		}
+		free(statsLine);
 		fclose(stats);
 	}	
 }

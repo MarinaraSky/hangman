@@ -69,9 +69,16 @@ main(int argc, char *argv[])
 
 	char *displayWord = malloc(sizeof(char) * strlen(secretWord) + 1);
 	memset(displayWord, 0, strlen(secretWord) + 1);
-	for(unsigned int i = 0; i < strlen(secretWord); i++)
+	for(size_t i = 0; i < strlen(secretWord); i++)
 	{
-		displayWord[i] = '_';
+		if((ispunct(secretWord[i])))
+		{
+			displayWord[i] = secretWord[i];
+		}
+		else
+		{
+			displayWord[i] = '_';
+		}
 	}
 	playGame(secretWord, displayWord);
 	free(displayWord);
@@ -87,10 +94,15 @@ printUsage(void)
 int
 validateInput(char *guess)
 {
-	for(unsigned int i = 0; i < strlen(guess); i++)
+	int isAlphaChar = 0;
+	for(size_t i = 0; i < strlen(guess); i++)
 	{
-		if(isalpha(guess[i]))
+		if(isalpha(guess[i]) || ispunct(guess[i]))
 		{
+			if(isalpha(guess[i]))
+			{
+				isAlphaChar++;
+			}
 			if(isupper(guess[i]))
 			{
 				guess[i] = tolower(guess[i]);
@@ -101,6 +113,10 @@ validateInput(char *guess)
 			return 0;
 		}
 	}
+	if(isAlphaChar == 0)
+	{
+		return 0;
+	}
 	return 1;
 }
 
@@ -108,7 +124,7 @@ int
 checkGuess(char *guess, char *secretWord, char *displayWord)
 {
 	int found = 0;
-	for(unsigned int i = 0; i < strlen(secretWord); i++)
+	for(size_t i = 0; i < strlen(secretWord); i++)
 	{
 		if(guess[0] == secretWord[i])
 		{
@@ -191,6 +207,7 @@ readFile(char *secretWord, char *filename)
 	char *readWord = NULL;
 	long unsigned int readWordLength = 0;
 	int validLines = 0;
+	int badLines = 0;
 	int totalLines = 0;
 
 	wordList = fopen(filename, "r");
@@ -221,7 +238,7 @@ readFile(char *secretWord, char *filename)
 			printf("No Valid Words found\n");
 			exit(2);
 		}
-		srand(time(0));
+		srand(time(NULL));
 		random = rand() % totalLines;
 		fseek(wordList, 0, SEEK_SET);
 		totalLines = 0;
@@ -235,7 +252,13 @@ readFile(char *secretWord, char *filename)
 			}
 			totalLines++;
 		}
-	}while(validateInput(secretWord) == 0);
+		badLines++;
+	}while(validateInput(secretWord) == 0 && badLines <= 2);
+	if(badLines >= 2)
+	{
+		printf("Bad Word file.\n");
+		exit(2);
+	}
 	free(readWord);
 	fclose(wordList);
 }
@@ -291,7 +314,7 @@ printBanner(int win, int loss, int totalGuess)
 	printf("Records:  W/L:\t\t%d/%d\n", win, loss);
 	if(win + loss != 0)
 	{
-		average = totalGuess / (win + loss);
+		average = (float) totalGuess / (win + loss);
 	}
 	printf("\t  Avg Score: \t%.2f\n", average);
 	printf("**********************************\n");

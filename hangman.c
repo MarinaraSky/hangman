@@ -29,6 +29,9 @@ playGame(char *secretWord, char *displayWord);
 void
 readFile(char *secretWord, char *filename);
 
+void
+getStats(int *win, int *loss, int *totalGuess);
+
 int 
 main(int argc, char *argv[])
 {
@@ -115,6 +118,12 @@ playGame(char *secretWord, char *displayWord)
 {
 	int notWinning = 1;
 	int guessCount = 0;
+	int win;
+	int loss;
+	int totalGuess;
+
+	getStats(&win, &loss, &totalGuess);
+	printf("win: %d, loss: %d, TG: %d\n", win, loss, totalGuess);
 	while(notWinning && guessCount < LOSS_COUNT)
 	{
 		char guess[GUESS_LENGTH];
@@ -159,6 +168,7 @@ playGame(char *secretWord, char *displayWord)
 void
 readFile(char *secretWord, char *filename)
 {
+	// CAN WE MAKE ASSUMPTION AT LEAST 1 GOOD WORD IN FILE
 	int random = 0;
 	int readWordSize = 0;
 	FILE *wordList;
@@ -169,7 +179,7 @@ readFile(char *secretWord, char *filename)
 	wordList = fopen(filename, "r");
 	if(wordList == NULL)
 	{
-		printf("Please supply a wordlist.\n");
+		printf("Wordlist does not exist.\n");
 		printUsage();
 		exit(1);
 	}
@@ -195,4 +205,26 @@ readFile(char *secretWord, char *filename)
 		}
 	}while(validateInput(secretWord) == 0);
 	fclose(wordList);
+}
+
+void
+getStats(int *win, int *loss, int *totalGuess)
+{
+	FILE *stats;
+	char *statsLine;
+	long unsigned int statsLineLength = 0;
+
+	stats = fopen(".hangman", "r");
+	if(stats == NULL)
+	{
+		*win = 0;
+		*loss = 0;
+		*totalGuess = 0;
+	}
+	else
+	{
+		getline(&statsLine, &statsLineLength, stats);
+		sscanf(statsLine, "%d %d %d", win, loss, totalGuess);
+		fclose(stats);
+	}	
 }

@@ -48,6 +48,9 @@ void
 printBanner(int win, int loss, int totalGuess, int totalTime,
 		    int currentStreak, int highStreak);
 
+void
+printHungman(int currentGuess);
+
 int 
 main(int argc, char *argv[])
 {
@@ -169,6 +172,7 @@ playGame(char *secretWord, char *displayWord)
 		char buff[MAX_LENGTH];
 		int garbage;
 
+		printHungman(guessCount);
 		printf("%s\n", displayWord);
 		printf("Please enter a letter : ");
 		fgets(buff, GUESS_LENGTH, stdin);
@@ -346,3 +350,67 @@ printBanner(int win, int loss, int totalGuess, int totalTime,
 	printf("Current Win Streak:\t%d \n", currentStreak);
 	printf("**********************************\n");
 }	
+
+void
+printHungman(int currentGuess)
+{
+	printf("\t");
+	for(int i = 0; i < 9; i++)
+	{
+		if(i == 0)
+		{
+			printf("\u2554");
+		}
+		else if(i == 8)
+		{
+			printf("\u2557");
+		}
+		else
+		{
+			printf("\u2550");
+		}
+	}
+	printf("\n");
+
+	for(int i = 0; i < 8; i++)
+	{
+	
+		if(i < 2)
+		{
+			printf("\t\u2551\t\u2551\n");
+		}
+		else if((currentGuess > 0))
+		{
+			printf("\t\u2551\t");
+		}
+		else
+		{
+			printf("\t\u2551\n");
+		}
+		if(i == 2 && currentGuess >= 1)
+		{
+			printf("\u039f\n");
+			currentGuess--;
+		}
+		if(i == 3 && currentGuess == 3)
+		{
+			printf("\b/|\\\n");
+			currentGuess -= 3;
+		}
+		else if(i == 3 && currentGuess >= 2)
+		{
+			printf("\b/|\n");
+			currentGuess -= 2;
+		}
+		else if(i == 3 && currentGuess >= 1)
+		{
+			printf("|\n");
+			currentGuess--;
+		}
+		if(i == 4 && currentGuess >= 1)
+		{
+			printf("\b/\n");
+			currentGuess = 0;
+		}
+	}
+}

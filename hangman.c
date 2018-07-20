@@ -4,7 +4,8 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define MAX_LENGTH 		35 /* Length of Supercalifragilisticexpialidocious + 1*/
+/* Length of Supercalifragilisticexpialidocious + 1 */
+#define MAX_LENGTH 		35
 #define LOSS_COUNT 		6
 #define GUESS_LENGTH 	2
 
@@ -12,12 +13,13 @@
 void
 printUsage(void);
 
-/* Used to validate user input or file data and changes case if not lower case */
+/* Used to validate user input or file data * 
+ * and changes case if not lower case 		*/
 int
 validateInput(char *guess);
 
-/* Takes the valid input and compares it against the secret word. 
- * Changes the display word if correct letter was guessed */
+/* Takes the valid input and compares it against the secret word. * 
+ * Changes the display word if correct letter was guessed 		  */
 int
 checkGuess(char *guess, char *secretWord, char *displayWord);
 
@@ -25,12 +27,23 @@ checkGuess(char *guess, char *secretWord, char *displayWord);
 void
 playGame(char *secretWord, char *displayWord);
 
-/* Opens a wordlist, and selects a random valid word from it to play hangman */
+/* Opens a wordlist, and selects a random	* 
+ * valid word from it to play hangman 		*/
 void
 readFile(char *secretWord, char *filename);
 
+/* Reads .hangman file for stats if its there, 	*
+ * if its not treats as first game 				*/
 void
 getStats(int *win, int *loss, int *totalGuess);
+
+/* Saves current stats to .hangman file */
+void
+saveStats(int *win, int *loss, int *totalGuess);
+
+/* Prints a banner that shows previous stats */
+void
+printBanner(int win, int loss, int totalGuess);
 
 int 
 main(int argc, char *argv[])
@@ -123,7 +136,7 @@ playGame(char *secretWord, char *displayWord)
 	int totalGuess;
 
 	getStats(&win, &loss, &totalGuess);
-	printf("win: %d, loss: %d, TG: %d\n", win, loss, totalGuess);
+	printBanner(win, loss, totalGuess);
 	while(notWinning && guessCount < LOSS_COUNT)
 	{
 		char guess[GUESS_LENGTH];
@@ -157,24 +170,28 @@ playGame(char *secretWord, char *displayWord)
 	}
 	if(notWinning == 0)
 	{
-		printf("You win with %d chances left.\n", LOSS_COUNT - guessCount);
+		printf("You win with %d chances left.\n",  LOSS_COUNT - guessCount);
+		win++;
+		totalGuess += guessCount;
 	}
 	else
 	{
 		printf("You lose.\n");
+		loss++;
 	}
+	saveStats(&win, &loss, &totalGuess);
 }
 
 void
 readFile(char *secretWord, char *filename)
 {
-	// CAN WE MAKE ASSUMPTION AT LEAST 1 GOOD WORD IN FILE
 	int random = 0;
 	int readWordSize = 0;
 	FILE *wordList;
 	char *readWord;
 	long unsigned int readWordLength = 0;
-	int i = 0;
+	int validLines = 0;
+	int totalLines = 0;
 
 	wordList = fopen(filename, "r");
 	if(wordList == NULL)
@@ -183,25 +200,40 @@ readFile(char *secretWord, char *filename)
 		printUsage();
 		exit(1);
 	}
-	while((getline(&readWord, &readWordLength, wordList) != -1))
+	while((readWordSize = getline(&readWord, &readWordLength, wordList)) != -1)
 	{
-		i++;
+		readWord[readWordSize - 1] = 0;
+		if(readWordSize > MAX_LENGTH)
+		{
+			printf("Word in file is to large.\n");
+			exit(2);
+		}
+		if(validateInput(readWord) == 1 && strlen(readWord) != 0)
+		{
+			validLines++;
+		}
+		totalLines++;
 	}
 	do
 	{
+		if(validLines == 0)
+		{
+			printf("No Valid Words found\n");
+			exit(2);
+		}
 		srand(time(0));
-		random = rand() % i;
+		random = rand() % totalLines;
 		fseek(wordList, 0, SEEK_SET);
-		i = 0;
-		while(i <= random)
+		totalLines = 0;
+		while(totalLines <= random)
 		{
 			readWordSize = getline(&readWord, &readWordLength, wordList);
-			if(i == random)
+			if(totalLines == random)
 			{
 				readWord[readWordSize - 1] = 0;
 				strcpy(secretWord, readWord);
 			}
-			i++;
+			totalLines++;
 		}
 	}while(validateInput(secretWord) == 0);
 	fclose(wordList);
@@ -224,7 +256,41 @@ getStats(int *win, int *loss, int *totalGuess)
 	else
 	{
 		getline(&statsLine, &statsLineLength, stats);
-		sscanf(statsLine, "%d %d %d", win, loss, totalGuess);
+		if(sscanf(statsLine, "%d %d %d", win, loss, totalGuess) != 3)
+		{
+			printf("Corrupted .hangman file.\n");
+			*win = 0;
+			*loss = 0;
+			*totalGuess = 0;
+		}
 		fclose(stats);
 	}	
 }
+
+void
+saveStats(int *win, int *loss, int *totalGuess)
+{
+	FILE *stats;
+	
+	stats = fopen(".hangman", "w+");
+	fprintf(stats, "%d %d %d", *win, *loss, *totalGuess);
+	fclose(stats);
+}
+
+void
+printBanner(int win, int loss, int totalGuess)
+{
+	float average = 0.0;
+
+	printf("**********************************\n");
+	printf("Welcome to Jack Spence's Super Fun\n");
+	printf("            Hangman				  \n");
+	printf("\n");
+	printf("Records:  W/L:\t\t%d/%d\n", win, loss);
+	if(win + loss != 0)
+	{
+		average = totalGuess / (win + loss);
+	}
+	printf("\t  Avg Score: \t%.2f\n", average);
+	printf("**********************************\n");
+}	

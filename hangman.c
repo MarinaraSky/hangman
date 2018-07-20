@@ -273,13 +273,13 @@ readFile(char *secretWord, char *filename)
 		}
 		badLines++;
 	}while(validateInput(secretWord) == 0 && badLines <= 2);
+	free(readWord);
+	fclose(wordList);
 	if(badLines >= 2)
 	{
 		printf("Bad Word file.\n");
 		exit(2);
 	}
-	free(readWord);
-	fclose(wordList);
 }
 
 void

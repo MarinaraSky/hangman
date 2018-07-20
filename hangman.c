@@ -41,6 +41,10 @@ getStats(int *win, int *loss, int *totalGuess);
 void
 saveStats(int *win, int *loss, int *totalGuess);
 
+/* Prints a banner that shows previous stats */
+void
+printBanner(int win, int loss, int totalGuess);
+
 int 
 main(int argc, char *argv[])
 {
@@ -132,7 +136,7 @@ playGame(char *secretWord, char *displayWord)
 	int totalGuess;
 
 	getStats(&win, &loss, &totalGuess);
-	printf("win: %d, loss: %d, TG: %d\n", win, loss, totalGuess);
+	printBanner(win, loss, totalGuess);
 	while(notWinning && guessCount < LOSS_COUNT)
 	{
 		char guess[GUESS_LENGTH];
@@ -267,9 +271,26 @@ void
 saveStats(int *win, int *loss, int *totalGuess)
 {
 	FILE *stats;
-	char *statsLine;
 	
 	stats = fopen(".hangman", "w+");
 	fprintf(stats, "%d %d %d", *win, *loss, *totalGuess);
 	fclose(stats);
 }
+
+void
+printBanner(int win, int loss, int totalGuess)
+{
+	float average = 0.0;
+
+	printf("**********************************\n");
+	printf("Welcome to Jack Spence's Super Fun\n");
+	printf("            Hangman				  \n");
+	printf("\n");
+	printf("Records:  W/L:\t\t%d/%d\n", win, loss);
+	if(win + loss != 0)
+	{
+		average = totalGuess / (win + loss);
+	}
+	printf("\t  Avg Score: \t%.2f\n", average);
+	printf("**********************************\n");
+}	

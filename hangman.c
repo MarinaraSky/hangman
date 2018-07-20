@@ -289,36 +289,27 @@ getStats(int *win, int *loss, int *totalGuess, int *totalTime,
 	FILE *stats;
 	char *statsLine = NULL;
 	long unsigned int statsLineLength = 0;
+	
+	*win = 0;
+	*loss = 0;
+	*totalGuess = 0;
+	*totalTime = 0;
+	*currentStreak = 0;
+	*highStreak = 0;
 
-	stats = fopen(".hangman", "r");
-	if(stats == NULL)
+	stats = fopen(".hangman", "r+");
+	if(stats != NULL)
 	{
-		*win = 0;
-		*loss = 0;
-		*totalGuess = 0;
-		*totalTime = 0;
-		*currentStreak = 0;
-		*highStreak = 0;
-
+		getline(&statsLine, &statsLineLength, stats);
+		sscanf(statsLine, "%d %d %d %d %d %d", win, loss, totalGuess, 
+				totalTime, currentStreak, highStreak);
+		free(statsLine);
+		fclose(stats);
 	}
 	else
 	{
-		getline(&statsLine, &statsLineLength, stats);
-		if(sscanf(statsLine, "%d %d %d %d %d %d", win, loss, totalGuess,
-					totalTime, currentStreak, highStreak) != 6 )
-		{
-			printf("Corrupted .hangman file.\n");
-			*win = 0;
-			*loss = 0;
-			*totalGuess = 0;
-			*totalTime = 0;
-			*currentStreak = 0;
-			*highStreak = 0;
-		}
-		free(statsLine);
-		fclose(stats);
-
-	}	
+		printf("Corrupted or missing .hangman file\n");
+	}
 }
 
 void

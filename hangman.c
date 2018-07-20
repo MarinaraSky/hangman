@@ -7,7 +7,7 @@
 /* Length of Supercalifragilisticexpialidocious + 1 */
 #define MAX_LENGTH 		35
 #define LOSS_COUNT 		6
-#define GUESS_LENGTH 	2
+#define GUESS_LENGTH 	2	
 
 /* Used to print usage in Error cases */
 void
@@ -35,15 +35,18 @@ readFile(char *secretWord, char *filename);
 /* Reads .hangman file for stats if its there, 	*
  * if its not treats as first game 				*/
 void
-getStats(int *win, int *loss, int *totalGuess);
+getStats(int *win, int *loss, int *totalGuess, int *totalTime,
+		 int *currentStreak, int *highStreak);
 
 /* Saves current stats to .hangman file */
 void
-saveStats(int *win, int *loss, int *totalGuess);
+saveStats(int *win, int *loss, int *totalGuess, int *totalTime, 
+		  int *currentStreak, int *highStreak);
 
 /* Prints a banner that shows previous stats */
 void
-printBanner(int win, int loss, int totalGuess);
+printBanner(int win, int loss, int totalGuess, int totalTime,
+		    int currentStreak, int highStreak);
 
 int 
 main(int argc, char *argv[])
@@ -65,11 +68,13 @@ main(int argc, char *argv[])
 		printf("Wrong amount of arguments\n");
 		printUsage();
 	}
-	printf("%s\n", secretWord);
 
 	char *displayWord = malloc(sizeof(char) * strlen(secretWord) + 1);
 	memset(displayWord, 0, strlen(secretWord) + 1);
-	for(size_t i = 0; i < strlen(secretWord); i++)
+	printf("%s\n", secretWord);
+	size_t secretLen = strlen(secretWord);
+
+	for(size_t i = 0; i < secretLen; i++)
 	{
 		if((ispunct(secretWord[i])))
 		{
@@ -150,9 +155,14 @@ playGame(char *secretWord, char *displayWord)
 	int win;
 	int loss;
 	int totalGuess;
+	int totalTime;
+	int currentStreak;
+	int highStreak;
+	int startTime = time(0);
 
-	getStats(&win, &loss, &totalGuess);
-	printBanner(win, loss, totalGuess);
+	getStats(&win, &loss, &totalGuess, &totalTime, 
+				&currentStreak, &highStreak);
+	printBanner(win, loss, totalGuess, totalTime, currentStreak, highStreak);
 	while(notWinning && guessCount < LOSS_COUNT)
 	{
 		char guess[GUESS_LENGTH];
@@ -164,7 +174,7 @@ playGame(char *secretWord, char *displayWord)
 		fgets(buff, GUESS_LENGTH, stdin);
 		while((garbage = getchar()) != '\n');
 		strcpy(guess, buff);
-		guess[1] = 0;
+		guess[GUESS_LENGTH - 1] = 0;
 		if(validateInput(guess))
 		{
 			if(checkGuess(guess, secretWord, displayWord))
@@ -189,13 +199,22 @@ playGame(char *secretWord, char *displayWord)
 		printf("You win with %d chances left.\n",  LOSS_COUNT - guessCount);
 		win++;
 		totalGuess += guessCount;
+		currentStreak++;
+		if(currentStreak > highStreak)
+		{
+			highStreak = currentStreak;
+		}
 	}
 	else
 	{
 		printf("You lose.\n");
 		loss++;
+		currentStreak = 0;
 	}
-	saveStats(&win, &loss, &totalGuess);
+	totalTime += time(0) - startTime;
+	printf("Time played this round(seconds): %ld\n", time(0) - startTime);
+	saveStats(&win, &loss, &totalGuess, &totalTime, 
+				&currentStreak, &highStreak);
 }
 
 void
@@ -264,7 +283,8 @@ readFile(char *secretWord, char *filename)
 }
 
 void
-getStats(int *win, int *loss, int *totalGuess)
+getStats(int *win, int *loss, int *totalGuess, int *totalTime,
+		 int *currentStreak, int *highStreak)
 {
 	FILE *stats;
 	char *statsLine = NULL;
@@ -276,46 +296,62 @@ getStats(int *win, int *loss, int *totalGuess)
 		*win = 0;
 		*loss = 0;
 		*totalGuess = 0;
+		*totalTime = 0;
+		*currentStreak = 0;
+		*highStreak = 0;
+
 	}
 	else
 	{
 		getline(&statsLine, &statsLineLength, stats);
-		if(sscanf(statsLine, "%d %d %d", win, loss, totalGuess) != 3)
+		if(sscanf(statsLine, "%d %d %d %d %d %d", win, loss, totalGuess,
+					totalTime, currentStreak, highStreak) != 6 )
 		{
 			printf("Corrupted .hangman file.\n");
 			*win = 0;
 			*loss = 0;
 			*totalGuess = 0;
+			*totalTime = 0;
+			*currentStreak = 0;
+			*highStreak = 0;
 		}
 		free(statsLine);
 		fclose(stats);
+
 	}	
 }
 
 void
-saveStats(int *win, int *loss, int *totalGuess)
+saveStats(int *win, int *loss, int *totalGuess, int *totalTime,
+		  int *currentStreak, int *highStreak)
 {
 	FILE *stats;
 	
 	stats = fopen(".hangman", "w+");
-	fprintf(stats, "%d %d %d", *win, *loss, *totalGuess);
+	fprintf(stats, "%d %d %d %d %d %d", *win, *loss, *totalGuess,
+			*totalTime, *currentStreak, *highStreak);
 	fclose(stats);
 }
 
 void
-printBanner(int win, int loss, int totalGuess)
+printBanner(int win, int loss, int totalGuess, int totalTime,
+				int currentStreak, int highStreak)
 {
 	float average = 0.0;
+	float averageTime = 0.0;
 
 	printf("**********************************\n");
 	printf("Welcome to Jack Spence's Super Fun\n");
 	printf("            Hangman				  \n");
-	printf("\n");
-	printf("Records:  W/L:\t\t%d/%d\n", win, loss);
+	printf("Records:\nW/L:\t\t\t%d/%d\n", win, loss);
 	if(win + loss != 0)
 	{
 		average = (float) totalGuess / (win + loss);
+		averageTime = (float) totalTime / (win + loss);
 	}
-	printf("\t  Avg Score: \t%.2f\n", average);
+	printf("Avg Score: \t\t%.2f\n", average);
+	printf("Avg Time: \t\t%.2f\n", averageTime);
+	printf("Longest Win Streak:\t%d \n", highStreak);
+	printf("Current Win Streak:\t%d \n", currentStreak);
 	printf("**********************************\n");
 }	

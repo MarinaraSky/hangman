@@ -377,13 +377,13 @@ getStats(
         getline(&statsLine, &statsLineLength, stats);
         sscanf(statsLine, "%d %d %d %d %d %d", win, loss, totalGuess,
                totalTime, currentStreak, highStreak);
+		fclose(stats);
         free(statsLine);
     }
     else
     {
         printf("Corrupted or missing .hangman file\n");
     }
-    fclose(stats);
 }
 
 void

@@ -8,6 +8,12 @@
 #define MAX_LENGTH 		35
 #define LOSS_COUNT 		6
 #define GUESS_LENGTH 	2	
+#define	TOP_LEFT		"\u2554"
+#define TOP_RIGHT		"\u2557"
+#define HORIZ_BAR		"\u2550"
+#define VERT_BAR		"\u2551"
+#define JUNCT			"\u2569"
+#define HEAD			"\u039f"
 
 /* Used to print usage in Error cases */
 void
@@ -25,7 +31,7 @@ checkGuess(char *guess, char *secretWord, char *displayWord);
 
 /* main driver for game play */
 void
-playGame(char *secretWord, char *displayWord);
+playGame(char *secretWord);
 
 /* Opens a wordlist, and selects a random	* 
  * valid word from it to play hangman 		*/
@@ -48,8 +54,9 @@ void
 printBanner(int win, int loss, int totalGuess, int totalTime,
 		    int currentStreak, int highStreak);
 
+/* Used to output the hanging man to the screen */
 void
-printHungman(int currentGuess);
+printHangman(int currentGuess);
 
 int 
 main(int argc, char *argv[])
@@ -71,11 +78,14 @@ main(int argc, char *argv[])
 		printf("Wrong amount of arguments\n");
 		printUsage();
 	}
-
-	char *displayWord = malloc(sizeof(char) * strlen(secretWord) + 1);
-	memset(displayWord, 0, strlen(secretWord) + 1);
-	printf("%s\n", secretWord);
 	size_t secretLen = strlen(secretWord);
+
+	/* This is used to duplicate the secretWord without making it to large */
+	char *displayWord = malloc(sizeof(char) * secretLen + 1);
+	memset(displayWord, 0, secretLen + 1);
+
+	/* Uncomment the line below for EZ Mode */
+	/* printf("%s\n", secretWord); */
 
 	for(size_t i = 0; i < secretLen; i++)
 	{
@@ -85,10 +95,10 @@ main(int argc, char *argv[])
 		}
 		else
 		{
-			displayWord[i] = '_';
+			displayWord[i] = '?';
 		}
 	}
-	playGame(secretWord, displayWord);
+	playGame(secretWord);
 	free(displayWord);
 	return 0;
 }
@@ -121,6 +131,7 @@ validateInput(char *guess)
 			return 0;
 		}
 	}
+	/* Used to verify its not entirely symbols */
 	if(isAlphaChar == 0)
 	{
 		return 0;
@@ -151,7 +162,7 @@ checkGuess(char *guess, char *secretWord, char *displayWord)
 }
 
 void 
-playGame(char *secretWord, char *displayWord)
+playGame(char *secretWord)
 {
 	int notWinning = 1;
 	int guessCount = 0;
@@ -162,6 +173,26 @@ playGame(char *secretWord, char *displayWord)
 	int currentStreak;
 	int highStreak;
 	int startTime = time(0);
+	size_t secretLen = strlen(secretWord);
+
+	/* This is used to duplicate the secretWord without making it to large */
+	char *displayWord = malloc(sizeof(char) * secretLen + 1);
+	memset(displayWord, 0, secretLen + 1);
+
+	/* Uncomment the line below for EZ Mode */
+	/* printf("%s\n", secretWord); */
+
+	for(size_t i = 0; i < secretLen; i++)
+	{
+		if((ispunct(secretWord[i])))
+		{
+			displayWord[i] = secretWord[i];
+		}
+		else
+		{
+			displayWord[i] = '?';
+		}
+	}
 
 	getStats(&win, &loss, &totalGuess, &totalTime, 
 				&currentStreak, &highStreak);
@@ -172,10 +203,11 @@ playGame(char *secretWord, char *displayWord)
 		char buff[MAX_LENGTH];
 		int garbage;
 
-		printHungman(guessCount);
-		printf("%s\n", displayWord);
+		printHangman(guessCount);
+		printf("Hidden Word: %s\n", displayWord);
 		printf("Please enter a letter : ");
 		fgets(buff, GUESS_LENGTH, stdin);
+		/* Flushing input buffer */
 		while((garbage = getchar()) != '\n');
 		strcpy(guess, buff);
 		guess[GUESS_LENGTH - 1] = 0;
@@ -215,6 +247,7 @@ playGame(char *secretWord, char *displayWord)
 		loss++;
 		currentStreak = 0;
 	}
+	printHangman(guessCount);
 	totalTime += time(0) - startTime;
 	printf("Time played this round(seconds): %ld\n", time(0) - startTime);
 	saveStats(&win, &loss, &totalGuess, &totalTime, 
@@ -246,6 +279,8 @@ readFile(char *secretWord, char *filename)
 		if(readWordSize > MAX_LENGTH)
 		{
 			printf("Word in file is to large.\n");
+			free(readWord);
+			fclose(wordList);
 			exit(2);
 		}
 		if(validateInput(readWord) == 1 && strlen(readWord) != 0)
@@ -308,12 +343,12 @@ getStats(int *win, int *loss, int *totalGuess, int *totalTime,
 		sscanf(statsLine, "%d %d %d %d %d %d", win, loss, totalGuess, 
 				totalTime, currentStreak, highStreak);
 		free(statsLine);
-		fclose(stats);
 	}
 	else
 	{
 		printf("Corrupted or missing .hangman file\n");
 	}
+	fclose(stats);
 }
 
 void
@@ -352,22 +387,22 @@ printBanner(int win, int loss, int totalGuess, int totalTime,
 }	
 
 void
-printHungman(int currentGuess)
+printHangman(int currentGuess)
 {
 	printf("\t");
 	for(int i = 0; i < 9; i++)
 	{
 		if(i == 0)
 		{
-			printf("\u2554");
+			printf(TOP_LEFT);
 		}
 		else if(i == 8)
 		{
-			printf("\u2557");
+			printf(TOP_RIGHT);
 		}
 		else
 		{
-			printf("\u2550");
+			printf(HORIZ_BAR);
 		}
 	}
 	printf("\n");
@@ -377,22 +412,22 @@ printHungman(int currentGuess)
 	
 		if(i < 2)
 		{
-			printf("\t\u2551\t\u2551\n");
+			printf("\t%s\t%s\n", VERT_BAR, VERT_BAR);
 		}
 		else if((currentGuess > 0))
 		{
-			printf("\t\u2551\t");
+			printf("\t%s\t", VERT_BAR);
 		}
 		else
 		{
-			printf("\t\u2551\n");
+			printf("\t%s\n", VERT_BAR);
 		}
 		if(i == 2 && currentGuess >= 1)
 		{
-			printf("\u039f\n");
+			printf("%s\n", HEAD);
 			currentGuess--;
 		}
-		if(i == 3 && currentGuess == 3)
+		if(i == 3 && currentGuess >= 3)
 		{
 			printf("\b/|\\\n");
 			currentGuess -= 3;
@@ -407,10 +442,27 @@ printHungman(int currentGuess)
 			printf("|\n");
 			currentGuess--;
 		}
+		if(i == 4 && currentGuess >= 2)
+		{
+			printf("\b/ \\\n");
+			currentGuess = 0;
+		}
 		if(i == 4 && currentGuess >= 1)
 		{
 			printf("\b/\n");
 			currentGuess = 0;
 		}
 	}
+	for(int i = 0; i < 16; i++)
+	{
+		if(i == 8)
+		{
+			printf(JUNCT);
+		}
+		else
+		{
+			printf(HORIZ_BAR);
+		}
+	}
+	printf("\n");
 }
